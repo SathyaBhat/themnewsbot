@@ -9,7 +9,6 @@ log = logging.getLogger('nbt')
 last_updated = 0
 BOT_KEY = os.environ['NBT_ACCESS_TOKEN']
 API_BASE = 'https://api.telegram.org/bot'
-r = praw.Reddit(user_agent='Telegram Xiled Chippians Group')
 
 def get_updates():
     log.debug('Fetching telegram request')
@@ -19,6 +18,7 @@ def get_updates():
 def get_latest_news():
     log.debug('fetching latest news')
     allposts=[]
+    r = praw.Reddit(user_agent='Telegram Xiled Chippians Group')
     submissions = r.get_subreddit('programming').get_top(limit=5)      #Can change the subreddit or add more.
     for post in submissions:
         allposts.append(post.permalink)                                #Permalink or actual URL ? 
