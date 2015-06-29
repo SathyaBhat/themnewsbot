@@ -6,5 +6,4 @@ Bot posts top submissions from a subreddit
 
 ToDo :
 
-- [ ] 
-- [ ] 
+- Check our [waffle board](https://waffle.io/SathyaBhat/themnewsbot)
