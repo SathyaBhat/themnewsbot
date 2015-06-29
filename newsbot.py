@@ -3,12 +3,20 @@ import logging
 import json
 import os
 import praw
+import time
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('nbt')
-last_updated = 0
-BOT_KEY = os.environ['NBT_ACCESS_TOKEN']
+with open('last_updated.txt', 'r') as f:
+        last_updated_string=f.read()
+        
+f.close()
+last_updated=int(last_updated_string)
+
+BOT_KEY = '121846472:AAEF2t7PCTsCNL73xxcrLnGtAK3qAL_IBGo'
 API_BASE = 'https://api.telegram.org/bot'
+
+
 
 def get_updates():
     log.debug('Fetching telegram request')
@@ -31,15 +39,21 @@ def post_message(chat_id, text):
     requests.post(API_BASE + BOT_KEY + '/sendMessage', data=payload)
 
 
+
 if __name__ == '__main__':
-    log.debug('Starting up')
-    r = get_updates()
-    if r['ok']:
-        log.debug('Fetched sucessfully')
-        for req in r['result']:
-            if last_updated < req['update_id']:
-                n = get_latest_news()                                    #returns a list
-                for i in n:
-                    post_message(req['message']['chat']['id'], i)
-        last_updated = req['update_id']
-        log.debug('last_updated: {0}'.format(last_updated))
+    while (True):
+        log.debug('Starting up')
+        r = get_updates()
+        if r['ok']:
+            log.debug('Fetched sucessfully')
+            for req in r['result']:
+                if last_updated < req['update_id']:
+                    n = get_latest_news()                                    #returns a list
+                    #for i in n:
+                        #post_message(req['message']['chat']['id'], i)
+            last_updated = str(req['update_id'])
+            with open('last_updated.txt', 'w') as f:
+                f.write(last_updated)
+        
+            f.close()
+            log.debug('last_updated: {0}'.format(last_updated))
