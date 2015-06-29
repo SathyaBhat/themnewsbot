@@ -21,7 +21,7 @@ def get_latest_news():
     r = praw.Reddit(user_agent='Telegram Xiled Chippians Group')
     submissions = r.get_subreddit('programming').get_top(limit=5)      #Can change the subreddit or add more.
     for post in submissions:
-        allposts.append(post.permalink)                                #Permalink or actual URL ? 
+        allposts.append(post.url)                                
     return allposts
 
 
