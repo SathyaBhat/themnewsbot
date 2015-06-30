@@ -7,16 +7,25 @@ import praw
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('nbt')
 
-with open('last_updated.txt', 'r') as f:
-    try:
-        last_updated = int(f.read())
-    except ValueError:
-        last_updated = 0
-f.close()
-
+try:
+    with open('last_updated.txt', 'r') as f:
+        try:
+            last_updated = int(f.read())
+        except ValueError:
+            last_updated = 0
+    f.close()
+except FileNotFoundError:
+    last_updated = 0
+    
+skip_list = []
 
 BOT_KEY = os.environ['NBT_ACCESS_TOKEN']
 API_BASE = 'https://api.telegram.org/bot'
+
+
+def summarize(url):
+    log.info('Not yet implemented!')
+    return url
 
 
 def get_updates():
@@ -26,13 +35,13 @@ def get_updates():
 
 def get_latest_news():
     log.debug('Fetching news from reddit')
-    allposts = []
     r = praw.Reddit(user_agent='Telegram Xiled Chippians Group')
     # Can change the subreddit or add more.
     submissions = r.get_subreddit('programming').get_top(limit=5)
+    submisssion_content = ''
     for post in submissions:
-        allposts.append(post.url)
-    return allposts
+        submisssion_content += summarize(post.url) + '\n'
+    return submisssion_content
 
 
 def post_message(chat_id, text):
@@ -49,10 +58,17 @@ if __name__ == '__main__':
         if r['ok']:
             for req in r['result']:
                 if req['update_id'] > last_updated:
-                    n = get_latest_news()  # returns a list
-                    for i in n:
-                        post_message(req['message']['chat']['id'], i)
-                        log.debug("Posting...")
+                    chat_sender_id = req['message']['chat']['id']
+                    chat_text = req['message']['text']
+                    log.debug('Chat text received: {0}'.format(chat_text))
+                    if chat_text == '/stop':
+                        log.debug('Added {0} to skip list'.format(chat_sender_id))
+                        skip_list.append(chat_sender_id)
+                    if chat_sender_id not in skip_list:
+                        summarized_news = get_latest_news()
+                        post_message(chat_sender_id, summarized_news)
+                        log.debug(
+                            "Posting {0} to {1}".format(summarized_news, chat_sender_id))
                     last_updated = req['update_id']
                     with open('last_updated.txt', 'w') as f:
                         f.write(str(last_updated))
