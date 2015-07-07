@@ -30,7 +30,7 @@ def summarize(url):
 
 def get_updates():
     log.debug('Checking for requests')
-    return json.loads(requests.get(API_BASE + BOT_KEY + '/getUpdates').text)
+    return json.loads(requests.get(API_BASE + BOT_KEY + '/getUpdates', params={'offset':last_updated+1}).text)
 
 
 def get_latest_news():
@@ -57,21 +57,20 @@ if __name__ == '__main__':
         r = get_updates()
         if r['ok']:
             for req in r['result']:
-                if req['update_id'] > last_updated:
-                    chat_sender_id = req['message']['chat']['id']
-                    chat_text = req['message']['text']
-                    log.debug('Chat text received: {0}'.format(chat_text))
-                    if chat_text == '/stop':
-                        log.debug('Added {0} to skip list'.format(chat_sender_id))
-                        skip_list.append(chat_sender_id)
-                    if chat_sender_id not in skip_list:
-                        summarized_news = get_latest_news()
-                        post_message(chat_sender_id, summarized_news)
-                        log.debug(
-                            "Posting {0} to {1}".format(summarized_news, chat_sender_id))
-                    last_updated = req['update_id']
-                    with open('last_updated.txt', 'w') as f:
-                        f.write(str(last_updated))
-                        log.debug(
-                            'Updated last_updated to {0}'.format(last_updated))
-                    f.close()
+                chat_sender_id = req['message']['chat']['id']
+                chat_text = req['message']['text']
+                log.debug('Chat text received: {0}'.format(chat_text))
+                if chat_text == '/stop':
+                    log.debug('Added {0} to skip list'.format(chat_sender_id))
+                    skip_list.append(chat_sender_id)
+                if chat_sender_id not in skip_list:
+                    summarized_news = get_latest_news()
+                    post_message(chat_sender_id, summarized_news)
+                    log.debug(
+                        "Posting {0} to {1}".format(summarized_news, chat_sender_id))
+                last_updated = req['update_id']
+                with open('last_updated.txt', 'w') as f:
+                    f.write(str(last_updated))
+                    log.debug(
+                        'Updated last_updated to {0}'.format(last_updated))
+                f.close()
