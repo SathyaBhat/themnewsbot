@@ -63,7 +63,7 @@ if __name__ == '__main__':
                 if chat_text == '/stop':
                     log.debug('Added {0} to skip list'.format(chat_sender_id))
                     skip_list.append(chat_sender_id)
-                if chat_sender_id not in skip_list:
+                if (chat_text = '/fetch' and (chat_sender_id not in skip_list)):
                     summarized_news = get_latest_news()
                     post_message(chat_sender_id, summarized_news)
                     log.debug(
