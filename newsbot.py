@@ -81,9 +81,16 @@ if __name__ == '__main__':
                     skip_list.append(chat_sender_id)
                     last_updated = req['update_id']
                 if chat_text =='/start':
-                    print ('Hi! This is a News Bot which fetches news from subreddits');
-                    print ('Use "/source" to select a subreddit source.\nExample "/source programming,games" fetches news from r/programming, r/games");
-                    print ('Use "/stop" to stop the bot');
+                    helptext=
+                    '''
+                        Hi! This is a News Bot which fetches news from subreddits\nUse "/source" to select a subreddit source.\n
+                        Example "/source programming,games" fetches news from r/programming, r/games\n
+                        Use "/stop" to stop the bot
+                    '''
+                    post_message(chat_sender_id, helptext)
+                    last_updated = req['update_id']
+
+                  
                 if (chat_text == '/fetch' and (chat_sender_id not in skip_list)):
                     try:
                         sub_reddits = sources_dict[chat_sender_id]
