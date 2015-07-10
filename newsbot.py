@@ -49,10 +49,13 @@ def get_latest_news(sub_reddits):
     log.debug('Fetching subreddits: {0}'.format(sub_reddits))
     submissions = r.get_subreddit(sub_reddits).get_top(limit=5)
     submisssion_content = ''
-    for post in submissions:
-        submisssion_content += summarize(post.url) + '\n'
+    try:
+        for post in submissions:
+            submisssion_content += summarize(post.url) + '\n'
+    except praw.errors.Forbidden:
+            log.debug('subreddit {0} is private'.format(sub_reddits))
+            post_message(chat_sender_id, "Sorry couldn't fetch; subreddit is private")
     return submisssion_content
-
 
 def post_message(chat_id, text):
     log.debug('posting message to {0}'.format(chat_id))
@@ -73,16 +76,21 @@ if __name__ == '__main__':
                 r = re.search('(source+)(.*)', chat_text)
 
                 if (r is not None and r.group(1) == 'source'):
-                    sources_dict[chat_sender_id] = r.group(2)
-                    log.debug('Sources set for {0} to {1}'.format(sources_dict[chat_sender_id], r.group(2)))
+                    if r.group(2):
+                        sources_dict[chat_sender_id] = r.group(2)
+                        log.debug('Sources set for {0} to {1}'.format(sources_dict[chat_sender_id], r.group(2)))
+                        post_message(chat_sender_id, 'Sources set as {0}!'.format(r.group(2)))
+                    else:
+                        post_message(chat_sender_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
                     last_updated = req['update_id']
                 if chat_text == '/stop':
                     log.debug('Added {0} to skip list'.format(chat_sender_id))
                     skip_list.append(chat_sender_id)
                     last_updated = req['update_id']
-                if chat_text =='/start':
-                    helptext=
-                    '''
+                    post_message(chat_sender_id, "Ok, we won't send you any more messages.")
+
+                if chat_text == '/start':
+                    helptext = '''
                         Hi! This is a News Bot which fetches news from subreddits\nUse "/source" to select a subreddit source.\n
                         Example "/source programming,games" fetches news from r/programming, r/games\n
                         Use "/stop" to stop the bot
@@ -90,8 +98,8 @@ if __name__ == '__main__':
                     post_message(chat_sender_id, helptext)
                     last_updated = req['update_id']
 
-                  
                 if (chat_text == '/fetch' and (chat_sender_id not in skip_list)):
+                    post_message(chat_sender_id, 'Hang on, fetching your news..')
                     try:
                         sub_reddits = sources_dict[chat_sender_id]
                     except KeyError:
@@ -102,6 +110,7 @@ if __name__ == '__main__':
                         log.debug(
                             "Posting {0} to {1}".format(summarized_news, chat_sender_id))
                     last_updated = req['update_id']
+
                 with open('last_updated.txt', 'w') as f:
                     f.write(str(last_updated))
                     log.debug(
