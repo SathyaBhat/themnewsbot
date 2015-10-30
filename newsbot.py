@@ -4,21 +4,15 @@ import json
 import os
 import praw
 import re
+import time
+
+from states import States
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('nbt')
 ERR_NO_SOURCE = 'No sources defined! Set a source using /source list, of, sub, reddits'
 
-try:
-    with open('last_updated.txt', 'r') as f:
-        try:
-            last_updated = int(f.read())
-        except ValueError:
-            last_updated = 0
-    f.close()
-except FileNotFoundError:
-    last_updated = 0
-    
+
 skip_list = []
 sources_dict = {}
 
@@ -36,8 +30,9 @@ def clean_up_subreddits(sub_reddits):
     return sub_reddits.strip().replace(" ", "").replace(',', '+')
 
 
-def get_updates():
-    log.debug('Checking for requests')
+def get_updates(last_updated):
+    log.debug('Checking for requests, last updated passed is: {}'.format(last_updated))
+    time.sleep(1)
     return json.loads(requests.get(API_BASE + BOT_KEY + '/getUpdates', params={'offset': last_updated+1}).text)
 
 
@@ -54,8 +49,22 @@ def get_latest_news(sub_reddits):
             submisssion_content += summarize(post.url) + '\n'
     except praw.errors.Forbidden:
             log.debug('subreddit {0} is private'.format(sub_reddits))
-            post_message(chat_sender_id, "Sorry couldn't fetch; subreddit is private")
+            # post_message(chat_sender_id, "Sorry couldn't fetch; subreddit is private")
+            submisssion_content = "Sorry couldn't fetch; subreddit is private"
     return submisssion_content
+
+def get_last_updated():
+    try:
+        with open('last_updated.txt', 'r') as f:
+            try:
+                last_updated = int(f.read())
+            except ValueError:
+                last_updated = 0
+        f.close()
+    except FileNotFoundError:
+        last_updated = 0
+    log.debug('Last updated id: {0}'.format(last_updated))
+    return last_updated
 
 def post_message(chat_id, text):
     log.debug('posting message to {0}'.format(chat_id))
@@ -63,56 +72,68 @@ def post_message(chat_id, text):
     requests.post(API_BASE + BOT_KEY + '/sendMessage', data=payload)
 
 
-if __name__ == '__main__':
-    log.debug('Starting up')
-    log.debug('Last updated id: {0}'.format(last_updated))
-    while (True):
-        r = get_updates()
-        if r['ok']:
-            for req in r['result']:
-                chat_sender_id = req['message']['chat']['id']
+def handle_incoming_messages(last_updated):
+    r = get_updates(last_updated)
+    if r['ok']:
+        for req in r['result']:
+            chat_sender_id = req['message']['chat']['id']
+            try:
                 chat_text = req['message']['text']
-                log.debug('Chat text received: {0}'.format(chat_text))
-                r = re.search('(source+)(.*)', chat_text)
+            except KeyError:
+                chat_text = ''
+                log.debug('Looks like no chat text was detected... moving on')
+                last_updated = req['update_id']
+            log.debug('Chat text received: {0}'.format(chat_text))
+            r = re.search('(source+)(.*)', chat_text)
 
-                if (r is not None and r.group(1) == 'source'):
-                    if r.group(2):
-                        sources_dict[chat_sender_id] = r.group(2)
-                        log.debug('Sources set for {0} to {1}'.format(sources_dict[chat_sender_id], r.group(2)))
-                        post_message(chat_sender_id, 'Sources set as {0}!'.format(r.group(2)))
-                    else:
-                        post_message(chat_sender_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
-                    last_updated = req['update_id']
-                if chat_text == '/stop':
-                    log.debug('Added {0} to skip list'.format(chat_sender_id))
-                    skip_list.append(chat_sender_id)
-                    last_updated = req['update_id']
-                    post_message(chat_sender_id, "Ok, we won't send you any more messages.")
+            if (r is not None and r.group(1) == 'source'):
+                if r.group(2):
+                    sources_dict[chat_sender_id] = r.group(2)
+                    log.debug('Sources set for {0} to {1}'.format(sources_dict[chat_sender_id], r.group(2)))
+                    post_message(chat_sender_id, 'Sources set as {0}!'.format(r.group(2)))
+                else:
+                    post_message(chat_sender_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
 
-                if chat_text == '/start':
-                    helptext = '''
-                        Hi! This is a News Bot which fetches news from subreddits\nUse "/source" to select a subreddit source.\n
-                        Example "/source programming,games" fetches news from r/programming, r/games\n
-                        Use "/stop" to stop the bot
-                    '''
-                    post_message(chat_sender_id, helptext)
-                    last_updated = req['update_id']
+                last_updated = req['update_id']
+            if chat_text == '/stop':
+                log.debug('Added {0} to skip list'.format(chat_sender_id))
+                skip_list.append(chat_sender_id)
+                last_updated = req['update_id']
+                post_message(chat_sender_id, "Ok, we won't send you any more messages.")
 
-                if (chat_text == '/fetch' and (chat_sender_id not in skip_list)):
-                    post_message(chat_sender_id, 'Hang on, fetching your news..')
-                    try:
-                        sub_reddits = sources_dict[chat_sender_id]
-                    except KeyError:
-                        post_message(chat_sender_id, ERR_NO_SOURCE)
-                    else:
-                        summarized_news = get_latest_news(sources_dict[chat_sender_id])
-                        post_message(chat_sender_id, summarized_news)
-                        log.debug(
-                            "Posting {0} to {1}".format(summarized_news, chat_sender_id))
-                    last_updated = req['update_id']
+            if chat_text == '/start':
+                helptext = '''
+                    Hi! This is a News Bot which fetches news from subreddits\nUse "/source" to select a subreddit source.\n
+                    Example "/source programming,games" fetches news from r/programming, r/games\n
+                    Use "/stop" to stop the bot
+                '''
+                post_message(chat_sender_id, helptext)
+                last_updated = req['update_id']
 
-                with open('last_updated.txt', 'w') as f:
-                    f.write(str(last_updated))
+            if (chat_text == '/fetch' and (chat_sender_id not in skip_list)):
+                post_message(chat_sender_id, 'Hang on, fetching your news..')
+                try:
+                    sub_reddits = sources_dict[chat_sender_id]
+                except KeyError:
+                    post_message(chat_sender_id, ERR_NO_SOURCE)
+                else:
+                    summarized_news = get_latest_news(sources_dict[chat_sender_id])
+                    post_message(chat_sender_id, summarized_news)
                     log.debug(
-                        'Updated last_updated to {0}'.format(last_updated))
-                f.close()
+                        "Posting {0} to {1}".format(summarized_news, chat_sender_id))
+                last_updated = req['update_id']
+
+            with open('last_updated.txt', 'w') as f:
+                f.write(str(last_updated))
+                States.last_updated = last_updated
+                log.debug(
+                    'Updated last_updated to {0}'.format(last_updated))
+            f.close()
+
+if __name__ == '__main__':
+
+    log.debug('Starting up')
+    States.last_updated = get_last_updated()
+
+    while True:
+        handle_incoming_messages(States.last_updated)
