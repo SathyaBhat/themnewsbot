@@ -17,7 +17,7 @@ def get_latest_news(sub_reddits):
     submission_content = ''
     try:
         for post in submissions:
-            submission_content += summarize(post.url) + '\n'
+            submission_content += summarize(post.title + ' - ' + post.url) + '\n'
     except praw.errors.Forbidden:
             log.debug('subreddit {0} is private'.format(sub_reddits))
             submission_content = "Sorry couldn't fetch; subreddit is private"
