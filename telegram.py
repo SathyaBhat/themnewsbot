@@ -11,7 +11,7 @@ from reddit import get_latest_news
 
 def get_updates(last_updated):
     log.debug('Checking for requests, last updated passed is: {}'.format(last_updated))
-    time.sleep(1)
+    time.sleep(UDPATE_PERIOD)
     return json.loads(requests.get(API_BASE + BOT_KEY + '/getUpdates', params={'offset': last_updated+1}).text)
 
 def post_message(chat_id, text):
@@ -49,7 +49,7 @@ def handle_incoming_messages(last_updated):
                 last_updated = req['update_id']
                 post_message(chat_sender_id, "Ok, we won't send you any more messages.")
 
-            if chat_text == '/start':
+            if chat_text in ('/start', '/help'):
                 helptext = '''
                     Hi! This is a News Bot which fetches news from subreddits\nUse "/source" to select a subreddit source.\n
                     Example "/source programming,games" fetches news from r/programming, r/games\n
