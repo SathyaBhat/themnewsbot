@@ -30,16 +30,22 @@ def handle_incoming_messages(last_updated):
             except KeyError:
                 chat_text = ''
                 log.debug('Looks like no chat text was detected... moving on')
+
+            try:
+                person_id = req['message']['from']['id']
+            except KeyError:
+                pass
+
             log.debug('Chat text received: {0}'.format(chat_text))
             r = re.search('(source+)(.*)', chat_text)
 
             if (r is not None and r.group(1) == 'source'):
                 if r.group(2):
-                    sources_dict[chat_sender_id] = r.group(2)
+                    sources_dict[person_id] = r.group(2)
                     log.debug('Sources set for {0} to {1}'.format(sources_dict[chat_sender_id], r.group(2)))
-                    post_message(chat_sender_id, 'Sources set as {0}!'.format(r.group(2)))
+                    post_message(person_id, 'Sources set as {0}!'.format(r.group(2)))
                 else:
-                    post_message(chat_sender_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
+                    post_message(person_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
 
             if chat_text == '/stop':
                 log.debug('Added {0} to skip list'.format(chat_sender_id))
@@ -54,17 +60,17 @@ def handle_incoming_messages(last_updated):
                 '''
                 post_message(chat_sender_id, helptext)
 
-            if (chat_text == '/fetch' and (chat_sender_id not in skip_list)):
-                post_message(chat_sender_id, 'Hang on, fetching your news..')
+            if (chat_text == '/fetch' and (person_id not in skip_list)):
+                post_message(person_id, 'Hang on, fetching your news..')
                 try:
-                    sub_reddits = sources_dict[chat_sender_id]
+                    sub_reddits = sources_dict[person_id]
                 except KeyError:
-                    post_message(chat_sender_id, ERR_NO_SOURCE)
+                    post_message(person_id, ERR_NO_SOURCE)
                 else:
-                    summarized_news = get_latest_news(sources_dict[chat_sender_id])
-                    post_message(chat_sender_id, summarized_news)
+                    summarized_news = get_latest_news(sources_dict[person_id])
+                    post_message(person_id, summarized_news)
                     log.debug(
-                        "Posting {0} to {1}".format(summarized_news, chat_sender_id))
+                        "Posting {0} to {1}".format(summarized_news, person_id))
             last_updated = req['update_id']
             with open('last_updated.txt', 'w') as f:
                 f.write(str(last_updated))
