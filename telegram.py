@@ -30,7 +30,6 @@ def handle_incoming_messages(last_updated):
             except KeyError:
                 chat_text = ''
                 log.debug('Looks like no chat text was detected... moving on')
-                last_updated = req['update_id']
             log.debug('Chat text received: {0}'.format(chat_text))
             r = re.search('(source+)(.*)', chat_text)
 
@@ -42,11 +41,9 @@ def handle_incoming_messages(last_updated):
                 else:
                     post_message(chat_sender_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
 
-                last_updated = req['update_id']
             if chat_text == '/stop':
                 log.debug('Added {0} to skip list'.format(chat_sender_id))
                 skip_list.append(chat_sender_id)
-                last_updated = req['update_id']
                 post_message(chat_sender_id, "Ok, we won't send you any more messages.")
 
             if chat_text in ('/start', '/help'):
@@ -56,7 +53,6 @@ def handle_incoming_messages(last_updated):
                     Use "/stop" to stop the bot
                 '''
                 post_message(chat_sender_id, helptext)
-                last_updated = req['update_id']
 
             if (chat_text == '/fetch' and (chat_sender_id not in skip_list)):
                 post_message(chat_sender_id, 'Hang on, fetching your news..')
@@ -69,8 +65,7 @@ def handle_incoming_messages(last_updated):
                     post_message(chat_sender_id, summarized_news)
                     log.debug(
                         "Posting {0} to {1}".format(summarized_news, chat_sender_id))
-                last_updated = req['update_id']
-
+            last_updated = req['update_id']
             with open('last_updated.txt', 'w') as f:
                 f.write(str(last_updated))
                 States.last_updated = last_updated
