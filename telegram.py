@@ -42,7 +42,7 @@ def handle_incoming_messages(last_updated):
             if (r is not None and r.group(1) == 'source'):
                 if r.group(2):
                     sources_dict[person_id] = r.group(2)
-                    log.debug('Sources set for {0} to {1}'.format(sources_dict[chat_sender_id], r.group(2)))
+                    log.debug('Sources set for {0} to {1}'.format(sources_dict[person_id], r.group(2)))
                     post_message(person_id, 'Sources set as {0}!'.format(r.group(2)))
                 else:
                     post_message(person_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
