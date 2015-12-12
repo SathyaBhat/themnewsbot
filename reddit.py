@@ -21,6 +21,9 @@ def get_latest_news(sub_reddits):
     except praw.errors.Forbidden:
             log.debug('subreddit {0} is private'.format(sub_reddits))
             submission_content = "Sorry couldn't fetch; subreddit is private"
+    except praw.errors.InvalidSubreddit:
+            log.debug('Subreddit {} is invalid or doesn''t exist.'.format(sub_reddits))
+            submission_content = "Sorry couldn't fetch; subreddit doesn't seem to exist"
     return submission_content
 
 def clean_up_subreddits(sub_reddits):
