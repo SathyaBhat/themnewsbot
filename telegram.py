@@ -1,18 +1,24 @@
 __author__ = 'Sathyajith'
 
 import re
-import time
-import json
+from time import sleep
 import requests
 
 from states import States, log
 from constants import *
 from reddit import get_latest_news
 
+
 def get_updates(last_updated):
     log.debug('Checking for requests, last updated passed is: {}'.format(last_updated))
-    time.sleep(UPDATE_PERIOD)
-    return json.loads(requests.get(API_BASE + BOT_KEY + '/getUpdates', params={'offset': last_updated+1}).text)
+    sleep(UPDATE_PERIOD)
+    response = requests.get(API_BASE + BOT_KEY + '/getUpdates', params={'offset': last_updated+1})
+    if response.status_code != 200:
+        # wait for a bit, try again
+        sleep(UPDATE_PERIOD)
+        get_updates(last_updated)
+    return response.json()
+
 
 def post_message(chat_id, text):
     log.debug('posting message to {0}'.format(chat_id))
@@ -27,6 +33,7 @@ def handle_incoming_messages(last_updated):
             chat_sender_id = req['message']['chat']['id']
             try:
                 chat_text = req['message']['text']
+                split_chat_text = chat_text.split()
             except KeyError:
                 chat_text = ''
                 log.debug('Looks like no chat text was detected... moving on')
@@ -60,7 +67,7 @@ def handle_incoming_messages(last_updated):
                 '''
                 post_message(chat_sender_id, helptext)
 
-            if (chat_text == '/fetch' and (person_id not in skip_list)):
+            if split_chat_text[0] == '/fetch' and (person_id not in skip_list):
                 post_message(person_id, 'Hang on, fetching your news..')
                 try:
                     sub_reddits = sources_dict[person_id]
