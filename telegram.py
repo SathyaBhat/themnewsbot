@@ -11,7 +11,7 @@ from reddit import get_latest_news
 
 def get_updates(last_updated):
     log.debug('Checking for requests, last updated passed is: {}'.format(last_updated))
-    time.sleep(UDPATE_PERIOD)
+    time.sleep(UPDATE_PERIOD)
     return json.loads(requests.get(API_BASE + BOT_KEY + '/getUpdates', params={'offset': last_updated+1}).text)
 
 def post_message(chat_id, text):
