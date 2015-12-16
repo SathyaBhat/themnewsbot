@@ -63,7 +63,8 @@ def handle_incoming_messages(last_updated):
                 helptext = '''
                     Hi! This is a News Bot which fetches news from subreddits\nUse "/source" to select a subreddit source.\n
                     Example "/source programming,games" fetches news from r/programming, r/games\n
-                    Use "/stop" to stop the bot
+                    Use "/fetch for the bot to go ahead and fetch the news. At the moment, bot will fetch total of 5 posts from all sub reddits\n
+                    I will have this configurable soon.
                 '''
                 post_message(chat_sender_id, helptext)
 
