@@ -15,10 +15,14 @@ def get_updates(last_updated):
     response = requests.get(API_BASE + BOT_KEY + '/getUpdates', params={'offset': last_updated+1})
     if response.status_code != 200:
         # wait for a bit, try again
-        sleep(UPDATE_PERIOD)
+        sleep(UPDATE_PERIOD*20)
         get_updates(last_updated)
-    return response.json()
-
+    try:
+        json_response = response.json()
+    except ValueError:
+        sleep(UPDATE_PERIOD*20)
+        get_updates(last_updated)
+    return json_response
 
 def post_message(chat_id, text):
     log.debug('posting message to {0}'.format(chat_id))
@@ -28,6 +32,7 @@ def post_message(chat_id, text):
 
 def handle_incoming_messages(last_updated):
     r = get_updates(last_updated)
+    split_chat_text = []
     if r['ok']:
         for req in r['result']:
             chat_sender_id = req['message']['chat']['id']
@@ -36,8 +41,8 @@ def handle_incoming_messages(last_updated):
                 split_chat_text = chat_text.split()
             except KeyError:
                 chat_text = ''
+                split_chat_text.append(chat_text)
                 log.debug('Looks like no chat text was detected... moving on')
-
             try:
                 person_id = req['message']['from']['id']
             except KeyError:
@@ -53,7 +58,6 @@ def handle_incoming_messages(last_updated):
                     post_message(person_id, 'Sources set as {0}!'.format(r.group(2)))
                 else:
                     post_message(person_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
-
             if chat_text == '/stop':
                 log.debug('Added {0} to skip list'.format(chat_sender_id))
                 skip_list.append(chat_sender_id)
@@ -61,9 +65,9 @@ def handle_incoming_messages(last_updated):
 
             if chat_text in ('/start', '/help'):
                 helptext = '''
-                    Hi! This is a News Bot which fetches news from subreddits\nUse "/source" to select a subreddit source.\n
-                    Example "/source programming,games" fetches news from r/programming, r/games\n
-                    Use "/fetch for the bot to go ahead and fetch the news. At the moment, bot will fetch total of 5 posts from all sub reddits\n
+                    Hi! This is a News Bot which fetches news from subreddits. Use "/source" to select a subreddit source.
+                    Example "/source programming,games" fetches news from r/programming, r/games.
+                    Use "/fetch for the bot to go ahead and fetch the news. At the moment, bot will fetch total of 5 posts from all sub reddits
                     I will have this configurable soon.
                 '''
                 post_message(chat_sender_id, helptext)
@@ -86,4 +90,3 @@ def handle_incoming_messages(last_updated):
                 log.debug(
                     'Updated last_updated to {0}'.format(last_updated))
             f.close()
-
