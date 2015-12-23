@@ -13,6 +13,7 @@ def get_updates(last_updated):
     log.debug('Checking for requests, last updated passed is: {}'.format(last_updated))
     sleep(UPDATE_PERIOD)
     response = requests.get(API_BASE + BOT_KEY + '/getUpdates', params={'offset': last_updated+1})
+    json_response = FALSE_RESPONSE
     if response.status_code != 200:
         # wait for a bit, try again
         sleep(UPDATE_PERIOD*20)
@@ -22,10 +23,11 @@ def get_updates(last_updated):
     except ValueError:
         sleep(UPDATE_PERIOD*20)
         get_updates(last_updated)
+    log.info('received response: {}'.format(json_response))
     return json_response
 
 def post_message(chat_id, text):
-    log.debug('posting message to {0}'.format(chat_id))
+    log.info('posting {} to {}'.format(text, chat_id))
     payload = {'chat_id': chat_id, 'text': text}
     requests.post(API_BASE + BOT_KEY + '/sendMessage', data=payload)
 
@@ -48,7 +50,7 @@ def handle_incoming_messages(last_updated):
             except KeyError:
                 pass
 
-            log.debug('Chat text received: {0}'.format(chat_text))
+            log.info('Chat text received: {0}'.format(chat_text))
             r = re.search('(source+)(.*)', chat_text)
 
             if (r is not None and r.group(1) == 'source'):
@@ -81,8 +83,6 @@ def handle_incoming_messages(last_updated):
                 else:
                     summarized_news = get_latest_news(sources_dict[person_id])
                     post_message(person_id, summarized_news)
-                    log.debug(
-                        "Posting {0} to {1}".format(summarized_news, person_id))
             last_updated = req['update_id']
             with open('last_updated.txt', 'w') as f:
                 f.write(str(last_updated))

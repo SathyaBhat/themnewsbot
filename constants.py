@@ -8,3 +8,4 @@ sources_dict = {}
 BOT_KEY = os.environ['NBT_ACCESS_TOKEN']
 API_BASE = 'https://api.telegram.org/bot'
 UPDATE_PERIOD = 6
+FALSE_RESPONSE = {"ok": False}
