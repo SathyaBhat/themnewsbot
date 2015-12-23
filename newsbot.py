@@ -17,8 +17,10 @@ def get_last_updated():
 
 if __name__ == '__main__':
 
-    log.debug('Starting up')
-    States.last_updated = get_last_updated()
-
-    while True:
-        handle_incoming_messages(States.last_updated)
+    try:
+        log.debug('Starting up')
+        States.last_updated = get_last_updated()
+        while True:
+            handle_incoming_messages(States.last_updated)
+    except KeyboardInterrupt:
+        log.info('Received KeybInterrupt, exiting')
