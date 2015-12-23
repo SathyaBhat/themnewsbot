@@ -5,8 +5,10 @@ import requests
 from states import States, log
 from constants import *
 from reddit import get_latest_news
+from models import *
 
 __author__ = 'Sathyajith'
+db = SqliteDatabase('newsbot.db')
 
 
 def get_updates(last_updated):
@@ -57,7 +59,12 @@ def handle_incoming_messages(last_updated):
             if (r is not None and r.group(1) == 'source'):
                 if r.group(2):
                     sources_dict[person_id] = r.group(2)
-                    log.debug('Sources set for {0} to {1}'.format(sources_dict[person_id], r.group(2)))
+                    log.info('Sources set for {0} to {1}'.format(person_id, sources_dict[person_id]))
+                    with db.atomic() as txn:
+                        sources = Source()
+                        sources.person_id = person_id
+                        sources.fetch_from = sources_dict[person_id]
+                        sources.save()
                     post_message(person_id, 'Sources set as {0}!'.format(r.group(2)))
                 else:
                     post_message(person_id, 'We need a comma separated list of subreddits! No subreddit, no news :-(')
