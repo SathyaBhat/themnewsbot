@@ -1,6 +1,7 @@
 from states import States, log
 from telegram import handle_incoming_messages
 
+
 def get_last_updated():
     try:
         with open('last_updated.txt', 'r') as f:

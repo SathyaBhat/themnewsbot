@@ -1,5 +1,3 @@
-__author__ = 'Sathyajith'
-
 import re
 from time import sleep
 import requests
@@ -7,6 +5,8 @@ import requests
 from states import States, log
 from constants import *
 from reddit import get_latest_news
+
+__author__ = 'Sathyajith'
 
 
 def get_updates(last_updated):
@@ -25,6 +25,7 @@ def get_updates(last_updated):
         get_updates(last_updated)
     log.info('received response: {}'.format(json_response))
     return json_response
+
 
 def post_message(chat_id, text):
     log.info('posting {} to {}'.format(text, chat_id))

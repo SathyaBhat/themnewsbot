@@ -1,11 +1,13 @@
-__author__ = 'Sathyajith'
-
 import praw
 from states import log
+
+__author__ = 'Sathyajith'
+
 
 def summarize(url):
     log.info('Not yet implemented!')
     return url
+
 
 def get_latest_news(sub_reddits):
     log.debug('Fetching news from reddit')
@@ -25,6 +27,7 @@ def get_latest_news(sub_reddits):
             log.debug('Subreddit {} is invalid or doesn''t exist.'.format(sub_reddits))
             submission_content = "Sorry couldn't fetch; subreddit doesn't seem to exist"
     return submission_content
+
 
 def clean_up_subreddits(sub_reddits):
     log.debug('Got subreddits to clean: {0}'.format(sub_reddits))
